@@ -104,6 +104,7 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
+extern uint64 sys_trace(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -127,17 +128,57 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_trace]   sys_trace,
 };
+
+static char* syscall_array[]={
+  "Invalid",
+  "fork",
+  "exit",
+  "wait",
+  "pipe",
+  "read",
+  "kill",
+  "exec",
+  "fstat",
+  "chdir",
+  "dup",
+  "getpid",
+  "sbrk",
+  "sleep",
+  "uptime",
+  "open",
+  "write",
+  "mknod",
+  "unlink",
+  "link",
+  "mkdir",
+  "close",
+  "trace",
+};
+
+/* 
+* 4.3 系统调用的返回值
+* 当系统调用接口函数返回时，syscall将其返回值记录在p->trapframe->a0中。这将导致原始用户空间对exec()的调用返回该值，
+* 因为RISC-V上的C调用约定将返回值放在a0中。系统调用通常返回负数表示错误，返回零或正数表示成功。如果系统调用号无效，syscall打印错误并返回-1。
+*/
 
 void
 syscall(void)
 {
   int num;
   struct proc *p = myproc();
-
+  
   num = p->trapframe->a7;
+  // int mask=p->mask; // wrong to be get mask here, the mask is still 0 when trace sys_call is call.不可以在这里设置mask，否则trace不会打印
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     p->trapframe->a0 = syscalls[num]();
+    uint64 syscall_ret=p->trapframe->a0;
+  
+    int mask=p->mask; // get the mask；必须在这里获取mask，此处已经调用完trace的系统调用，因此此时的mask必定杯设置了
+    if((mask>>num)&1){
+      printf("%d: syscall %s -> %d\n",p->pid,syscall_array[num],syscall_ret); // printf the log if and only if the bit of the syscall of mask is set 1.
+    }
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

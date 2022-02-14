@@ -95,3 +95,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// 在kernel/sysproc.c中添加一个sys_trace()函数，它通过将参数保存到proc结构体（请参见kernel/proc.h）里的一个新变量中来实现新的系统调用.
+uint64
+sys_trace(void)
+{
+    int n;
+  if(argint(0, &n) < 0)
+    return -1;
+  // printf("call sys_trace,sys_num is %d\n",n); // for debug
+  myproc()->mask=n;
+  return 0;
+}
