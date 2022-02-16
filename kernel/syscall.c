@@ -105,6 +105,7 @@ extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
 extern uint64 sys_trace(void);
+extern uint64 sys_sysinfo(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -129,6 +130,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
+[SYS_sysinfo]   sys_sysinfo,
 };
 
 static char* syscall_array[]={
@@ -155,6 +157,7 @@ static char* syscall_array[]={
   "mkdir",
   "close",
   "trace",
+  "sysinfo",
 };
 
 /* 
@@ -175,7 +178,7 @@ syscall(void)
     p->trapframe->a0 = syscalls[num]();
     uint64 syscall_ret=p->trapframe->a0;
   
-    int mask=p->mask; // get the mask；必须在这里获取mask，此处已经调用完trace的系统调用，因此此时的mask必定杯设置了
+    int mask=p->mask; // get the mask；必须在这里获取mask，此处已经调用完trace的系统调用，因此此时的mask必定已经被设置了
     if((mask>>num)&1){
       printf("%d: syscall %s -> %d\n",p->pid,syscall_array[num],syscall_ret); // printf the log if and only if the bit of the syscall of mask is set 1.
     }

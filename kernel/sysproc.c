@@ -6,6 +6,10 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
+
+uint64 get_free_mem_size(); // get free memory size
+uint64 get_proc_num(); // get proc num
 
 uint64
 sys_exit(void)
@@ -105,5 +109,35 @@ sys_trace(void)
     return -1;
   // printf("call sys_trace,sys_num is %d\n",n); // for debug
   myproc()->mask=n;
+  return 0;
+}
+
+// 在kernel/sysproc.c中添加一个sys_trace()函数，它通过将参数保存到proc结构体（请参见kernel/proc.h）里的一个新变量中来实现新的系统调用.
+uint64
+sys_sysinfo(void)
+{
+  struct proc *p = myproc();
+  uint64 user_virtual_addr;
+  
+  // 1 get the input user virtual address
+  if(argaddr(0, &user_virtual_addr) < 0){
+    printf("sysinfo: Get the VM address failed\n");
+    return -1;  
+  }
+  
+  // 2 calculate relevant data in sysinfo
+  uint64 free_mem_cnt=get_free_mem_size();
+  uint64 proc_num=get_proc_num();
+  
+  struct sysinfo st;  
+  st.freemem=free_mem_cnt;
+  st.nproc=proc_num;
+ 
+  // 3 copy the data in sysinfo out to the user virtual space
+  if(copyout(p->pagetable, user_virtual_addr, (char *)&st, sizeof(st))  < 0){
+    printf("sysinfo: Copyout failed\n"); // 这里不知道为什么会copyout返回-1，但是又成功通过了test，待后面学习后再确认
+    return -1;
+  }
+
   return 0;
 }
