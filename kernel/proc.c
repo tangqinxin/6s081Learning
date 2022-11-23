@@ -34,12 +34,13 @@ procinit(void)
       // Allocate a page for the process's kernel stack.
       // Map it high in memory, followed by an invalid
       // guard page.
-      char *pa = kalloc();
-      if(pa == 0)
-        panic("kalloc");
-      uint64 va = KSTACK((int) (p - proc));
-      kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
-      p->kstack = va;
+      // char *pa = kalloc();
+      // if(pa == 0)
+      //   panic("kalloc");
+      // uint64 va = KSTACK((int) (p - proc));
+      // kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+      // kvm_map_kpt_process(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+      // p->kstack = va;
   }
   kvminithart();
 }
@@ -93,7 +94,6 @@ static struct proc*
 allocproc(void)
 {
   struct proc *p;
-
   for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if(p->state == UNUSED) {
@@ -121,6 +121,23 @@ found:
     return 0;
   }
 
+  // kernel pagetable for process
+  p->k_pagetable = kvm_create_kpt_process(p);
+  if(p->k_pagetable == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
+  // 设置该进程对应的内核栈，此处代码从procinit中迁移过来
+  // 将procinit中这些代码注释
+  char *pa = kalloc();
+  if(pa == 0)
+    panic("kalloc");
+  uint64 va = KSTACK((int) (p - proc));
+  mappages(p->k_pagetable, va, PGSIZE, (uint64)pa, PTE_R | PTE_W);
+  p->kstack = va;
+
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
@@ -139,8 +156,17 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
+
+  if(p->pagetable){
     proc_freepagetable(p->pagetable, p->sz);
+  }
+
+  if(p->k_pagetable){
+    proc_free_kernel_pagetable(p->k_pagetable, p->kstack,p->sz);
+    p -> k_pagetable = 0;
+    p->kstack = 0;
+  }
+  // free the kernel stack in the RAM
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -221,6 +247,9 @@ userinit(void)
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
 
+  // uvminit为0，因此这里也为0
+  copyUserPgtb2kPgtb(p->pagetable, p->k_pagetable, 0, p->sz);
+
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
   p->trapframe->sp = PGSIZE;  // user stack pointer
@@ -229,7 +258,7 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
-
+  
   release(&p->lock);
 }
 
@@ -276,6 +305,9 @@ fork(void)
   np->sz = p->sz;
 
   np->parent = p;
+  // 上面相当于创建了一个新的进程np,所以我们需要同时修改np的内核进程代码
+  // 由于用户进程空间从0开始，因此此处我们从0开始拷贝
+  copyUserPgtb2kPgtb(np->pagetable,np->k_pagetable,0,np->sz);
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
@@ -473,7 +505,13 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        //我认为应该在切换上下文之前，使用新的页表，然后再切换上下文
+          w_satp(MAKE_SATP(p->k_pagetable));
+          sfence_vma();
+        
         swtch(&c->context, &p->context);
+
+        kvminithart();
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
@@ -485,6 +523,7 @@ scheduler(void)
     }
 #if !defined (LAB_FS)
     if(found == 0) {
+      kvminithart();
       intr_on();
       asm volatile("wfi");
     }
@@ -697,3 +736,17 @@ procdump(void)
     printf("\n");
   }
 }
+
+// 废弃
+// void init_proc_kernelstack(struct proc* proc, struct proc* p, int procdiff, pagetable_t proc_kernel_pagetable) {
+//       // Allocate a page for the process's kernel stack.
+//       // Map it high in memory, followed by an invalid
+//       // guard page.
+//       char *pa = kalloc();
+//       if(pa == 0)
+//         panic("kalloc");
+//       uint64 va = KSTACK(procdiff);
+//       // kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W); //修改点1
+//       kvm_map_kpt_process(va, (uint64)pa, PGSIZE, PTE_R | PTE_W, proc_kernel_pagetable);
+//       p->kstack = va;
+// }

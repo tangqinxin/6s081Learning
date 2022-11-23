@@ -97,6 +97,11 @@ exec(char *path, char **argv)
   if(copyout(pagetable, sp, (char *)ustack, (argc+1)*sizeof(uint64)) < 0)
     goto bad;
 
+ 
+  // 先释放之前旧的进程的内核页表的用户进程页表，再拷贝新的用户页表到内核中
+  uvmunmap(p->k_pagetable,0,PGROUNDUP(oldsz)/PGSIZE,0);
+  copyUserPgtb2kPgtb(pagetable,p->k_pagetable,0,sz);
+
   // arguments to user main(argc, argv)
   // argc is returned via the system call return
   // value, which goes in a0.
@@ -115,7 +120,9 @@ exec(char *path, char **argv)
   p->trapframe->epc = elf.entry;  // initial program counter = main
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
-
+  if(p->pid==1) {
+    vmprint(p->pagetable);
+  }
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:

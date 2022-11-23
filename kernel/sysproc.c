@@ -47,8 +47,26 @@ sys_sbrk(void)
   if(argint(0, &n) < 0)
     return -1;
   addr = myproc()->sz;
+  struct proc* p = myproc();
+  // 用户进程虚拟地址不能超过PLIC
+  if(PGROUNDUP(p->sz + n) >= PLIC) 
+    return -1;
+
   if(growproc(n) < 0)
     return -1;
+  
+  // n大于0时需要添加映射
+  if(n > 0){
+    copyUserPgtb2kPgtb(p->pagetable, p->k_pagetable, addr, n);
+  }
+  else{
+    // 释放对应pte
+    // [addr + n，addr)
+    for(uint64 i = PGROUNDUP(addr + n); i < PGROUNDUP(addr); i += PGSIZE){
+      uvmunmap(p->k_pagetable, i, 1, 0);
+    }
+  }
+
   return addr;
 }
 

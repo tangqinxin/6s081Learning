@@ -1,0 +1,1157 @@
+kernel/trampoline.S:23:        # sscratch points to where the process's p->trapframe is
+kernel/trampoline.S:63:	# save the user a0 in p->trapframe->a0
+kernel/trampoline.S:67:        # restore kernel stack pointer from p->trapframe->kernel_sp
+kernel/trampoline.S:70:        # make tp hold the current hartid, from p->trapframe->kernel_hartid
+kernel/trampoline.S:73:        # load the address of usertrap(), p->trapframe->kernel_trap
+kernel/trampoline.S:76:        # restore kernel page table from p->trapframe->kernel_satp
+kernel/trampoline.S:82:        # table does not specially map p->tf.
+匹配到二进制文件 kernel/proc.o
+kernel/syscall.c:15:  if(addr >= p->sz || addr+sizeof(uint64) > p->sz)
+kernel/syscall.c:17:  if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
+kernel/syscall.c:28:  int err = copyinstr(p->pagetable, buf, addr, max);
+kernel/syscall.c:40:    return p->trapframe->a0;
+kernel/syscall.c:42:    return p->trapframe->a1;
+kernel/syscall.c:44:    return p->trapframe->a2;
+kernel/syscall.c:46:    return p->trapframe->a3;
+kernel/syscall.c:48:    return p->trapframe->a4;
+kernel/syscall.c:50:    return p->trapframe->a5;
+kernel/syscall.c:138:  num = p->trapframe->a7;
+kernel/syscall.c:140:    p->trapframe->a0 = syscalls[num]();
+kernel/syscall.c:143:            p->pid, p->name, num);
+kernel/syscall.c:144:    p->trapframe->a0 = -1;
+kernel/file.c:97:    if(copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0)
+kernel/exec.c:65:  uint64 oldsz = p->sz;
+kernel/exec.c:103:  p->trapframe->a1 = sp;
+kernel/exec.c:109:  safestrcpy(p->name, last, sizeof(p->name));
+kernel/exec.c:112:  oldpagetable = p->pagetable;
+kernel/exec.c:113:  p->pagetable = pagetable;
+kernel/exec.c:114:  p->sz = sz;
+kernel/exec.c:115:  p->trapframe->epc = elf.entry;  // initial program counter = main
+kernel/exec.c:116:  p->trapframe->sp = sp; // initial stack pointer
+kernel/exec.c:118:  if(p->pid==1) {
+kernel/exec.c:119:    vmprint(p->pagetable);
+kernel/trap.c:51:  p->trapframe->epc = r_sepc();
+kernel/trap.c:56:    if(p->killed)
+kernel/trap.c:61:    p->trapframe->epc += 4;
+kernel/trap.c:71:    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+kernel/trap.c:73:    p->killed = 1;
+kernel/trap.c:76:  if(p->killed)
+kernel/trap.c:104:  p->trapframe->kernel_satp = r_satp();         // kernel page table
+kernel/trap.c:105:  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
+kernel/trap.c:106:  p->trapframe->kernel_trap = (uint64)usertrap;
+kernel/trap.c:107:  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+kernel/trap.c:119:  w_sepc(p->trapframe->epc);
+kernel/trap.c:122:  uint64 satp = MAKE_SATP(p->pagetable);
+kernel/memlayout.h:65://   TRAPFRAME (p->trapframe, used by the trampoline)
+kernel/fs.c:36:  memmove(sb, bp->data, sizeof(*sb));
+kernel/fs.c:56:  memset(bp->data, 0, BSIZE);
+kernel/fs.c:75:      if((bp->data[bi/8] & m) == 0){  // Is block free?
+kernel/fs.c:76:        bp->data[bi/8] |= m;  // Mark block in use.
+kernel/fs.c:98:  if((bp->data[bi/8] & m) == 0)
+kernel/fs.c:100:  bp->data[bi/8] &= ~m;
+kernel/fs.c:120:// not stored on disk: ip->ref and ip->valid.
+kernel/fs.c:131://   is free if ip->ref is zero. Otherwise ip->ref tracks
+kernel/fs.c:138://   cache entry is only correct when ip->valid is 1.
+kernel/fs.c:140://   the disk and sets ip->valid, while iput() clears
+kernel/fs.c:141://   ip->valid if ip->ref has fallen to zero.
+kernel/fs.c:150://   ... examine and modify ip->xxx ...
+kernel/fs.c:158:// pathname lookup. iget() increments ip->ref so that the inode
+kernel/fs.c:166:// entries. Since ip->ref indicates whether an entry is free,
+kernel/fs.c:167:// and ip->dev and ip->inum indicate which i-node an entry
+kernel/fs.c:170:// An ip->lock sleep-lock protects all ip-> fields other than ref,
+kernel/fs.c:171:// dev, and inum.  One must hold ip->lock in order to
+kernel/fs.c:172:// read or write that inode's ip->valid, ip->size, ip->type, &c.
+kernel/fs.c:204:    dip = (struct dinode*)bp->data + inum%IPB;
+kernel/fs.c:205:    if(dip->type == 0){  // a free inode
+kernel/fs.c:207:      dip->type = type;
+kernel/fs.c:218:// Must be called after every change to an ip->xxx field
+kernel/fs.c:220:// Caller must hold ip->lock.
+kernel/fs.c:227:  bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+kernel/fs.c:228:  dip = (struct dinode*)bp->data + ip->inum%IPB;
+kernel/fs.c:229:  dip->type = ip->type;
+kernel/fs.c:230:  dip->major = ip->major;
+kernel/fs.c:231:  dip->minor = ip->minor;
+kernel/fs.c:232:  dip->nlink = ip->nlink;
+kernel/fs.c:233:  dip->size = ip->size;
+kernel/fs.c:234:  memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+kernel/fs.c:252:    if(ip->ref > 0 && ip->dev == dev && ip->inum == inum){
+kernel/fs.c:253:      ip->ref++;
+kernel/fs.c:257:    if(empty == 0 && ip->ref == 0)    // Remember empty slot.
+kernel/fs.c:266:  ip->dev = dev;
+kernel/fs.c:267:  ip->inum = inum;
+kernel/fs.c:268:  ip->ref = 1;
+kernel/fs.c:269:  ip->valid = 0;
+kernel/fs.c:281:  ip->ref++;
+kernel/fs.c:294:  if(ip == 0 || ip->ref < 1)
+kernel/fs.c:297:  acquiresleep(&ip->lock);
+kernel/fs.c:299:  if(ip->valid == 0){
+kernel/fs.c:300:    bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+kernel/fs.c:301:    dip = (struct dinode*)bp->data + ip->inum%IPB;
+kernel/fs.c:302:    ip->type = dip->type;
+kernel/fs.c:303:    ip->major = dip->major;
+kernel/fs.c:304:    ip->minor = dip->minor;
+kernel/fs.c:305:    ip->nlink = dip->nlink;
+kernel/fs.c:306:    ip->size = dip->size;
+kernel/fs.c:307:    memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+kernel/fs.c:309:    ip->valid = 1;
+kernel/fs.c:310:    if(ip->type == 0)
+kernel/fs.c:319:  if(ip == 0 || !holdingsleep(&ip->lock) || ip->ref < 1)
+kernel/fs.c:322:  releasesleep(&ip->lock);
+kernel/fs.c:337:  if(ip->ref == 1 && ip->valid && ip->nlink == 0){
+kernel/fs.c:340:    // ip->ref == 1 means no other process can have ip locked,
+kernel/fs.c:342:    acquiresleep(&ip->lock);
+kernel/fs.c:347:    ip->type = 0;
+kernel/fs.c:349:    ip->valid = 0;
+kernel/fs.c:351:    releasesleep(&ip->lock);
+kernel/fs.c:356:  ip->ref--;
+kernel/fs.c:372:// are listed in ip->addrs[].  The next NINDIRECT blocks are
+kernel/fs.c:373:// listed in block ip->addrs[NDIRECT].
+kernel/fs.c:384:    if((addr = ip->addrs[bn]) == 0)
+kernel/fs.c:385:      ip->addrs[bn] = addr = balloc(ip->dev);
+kernel/fs.c:392:    if((addr = ip->addrs[NDIRECT]) == 0)
+kernel/fs.c:393:      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+kernel/fs.c:394:    bp = bread(ip->dev, addr);
+kernel/fs.c:395:    a = (uint*)bp->data;
+kernel/fs.c:397:      a[bn] = addr = balloc(ip->dev);
+kernel/fs.c:408:// Caller must hold ip->lock.
+kernel/fs.c:417:    if(ip->addrs[i]){
+kernel/fs.c:418:      bfree(ip->dev, ip->addrs[i]);
+kernel/fs.c:419:      ip->addrs[i] = 0;
+kernel/fs.c:423:  if(ip->addrs[NDIRECT]){
+kernel/fs.c:424:    bp = bread(ip->dev, ip->addrs[NDIRECT]);
+kernel/fs.c:425:    a = (uint*)bp->data;
+kernel/fs.c:428:        bfree(ip->dev, a[j]);
+kernel/fs.c:431:    bfree(ip->dev, ip->addrs[NDIRECT]);
+kernel/fs.c:432:    ip->addrs[NDIRECT] = 0;
+kernel/fs.c:435:  ip->size = 0;
+kernel/fs.c:440:// Caller must hold ip->lock.
+kernel/fs.c:444:  st->dev = ip->dev;
+kernel/fs.c:445:  st->ino = ip->inum;
+kernel/fs.c:446:  st->type = ip->type;
+kernel/fs.c:447:  st->nlink = ip->nlink;
+kernel/fs.c:448:  st->size = ip->size;
+kernel/fs.c:452:// Caller must hold ip->lock.
+kernel/fs.c:461:  if(off > ip->size || off + n < off)
+kernel/fs.c:463:  if(off + n > ip->size)
+kernel/fs.c:464:    n = ip->size - off;
+kernel/fs.c:467:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+kernel/fs.c:469:    if(either_copyout(user_dst, dst, bp->data + (off % BSIZE), m) == -1) {
+kernel/fs.c:479:// Caller must hold ip->lock.
+kernel/fs.c:488:  if(off > ip->size || off + n < off)
+kernel/fs.c:494:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+kernel/fs.c:496:    if(either_copyin(bp->data + (off % BSIZE), user_src, src, m) == -1) {
+kernel/fs.c:505:    if(off > ip->size)
+kernel/fs.c:506:      ip->size = off;
+kernel/fs.c:509:    // block to ip->addrs[].
+kernel/fs.c:532:  if(dp->type != T_DIR)
+kernel/fs.c:535:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/fs.c:545:      return iget(dp->dev, inum);
+kernel/fs.c:567:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/fs.c:637:    if(ip->type != T_DIR){
+kernel/proc.h:89:  // p->lock must be held when using these:
+kernel/proc.h:97:  // these are private to the process, so p->lock need not be held.
+kernel/riscv.h:161:// Supervisor Trap-Vector Base Address
+匹配到二进制文件 kernel/kernel
+kernel/vmcopyin.c:34:  if (srcva >= p->sz || srcva+len >= p->sz || srcva+len < srcva)
+kernel/vmcopyin.c:52:  for(int i = 0; i < max && srcva + i < p->sz; i++){
+kernel/kernel.asm:1087:// called from both the top- and bottom-half.
+kernel/kernel.asm:3871:// Caller must hold p->lock.
+kernel/kernel.asm:3881:  if(!holding(&p->lock))
+kernel/kernel.asm:3886:  if(p->chan == p && p->state == SLEEPING) {
+kernel/kernel.asm:3889:    p->state = RUNNABLE;
+kernel/kernel.asm:3902:  if(p->chan == p && p->state == SLEEPING) {
+kernel/kernel.asm:3906:    p->state = RUNNABLE;
+kernel/kernel.asm:3931:      initlock(&p->lock, "proc");
+kernel/kernel.asm:3937:      initlock(&p->lock, "proc");
+kernel/kernel.asm:4201:  if(p->trapframe)
+kernel/kernel.asm:4204:    kfree((void*)p->trapframe);
+kernel/kernel.asm:4207:  p->trapframe = 0;
+kernel/kernel.asm:4209:  if(p->pagetable)
+kernel/kernel.asm:4212:    proc_freepagetable(p->pagetable, p->sz);
+kernel/kernel.asm:4216:  if(p->k_pagetable){
+kernel/kernel.asm:4219:    uvmunmap(p->k_pagetable, p->kstack, 1, 1);
+kernel/kernel.asm:4225:    p->kstack = 0;
+kernel/kernel.asm:4227:  p->pagetable = 0;
+kernel/kernel.asm:4229:  p->sz = 0;
+kernel/kernel.asm:4231:  p->pid = 0;
+kernel/kernel.asm:4233:  p->parent = 0;
+kernel/kernel.asm:4235:  p->name[0] = 0;
+kernel/kernel.asm:4237:  p->chan = 0;
+kernel/kernel.asm:4239:  p->killed = 0;
+kernel/kernel.asm:4241:  p->xstate = 0;
+kernel/kernel.asm:4243:  p->state = UNUSED;
+kernel/kernel.asm:4265:  sz = p->sz;
+kernel/kernel.asm:4272:  p->sz = sz;
+kernel/kernel.asm:4285:    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+kernel/kernel.asm:4299:    sz = uvmdealloc(p->pagetable, sz, sz + n);
+kernel/kernel.asm:4325:      pp->parent = initproc;
+kernel/kernel.asm:4334:    if(pp->parent == p){
+kernel/kernel.asm:4337:      acquire(&pp->lock);
+kernel/kernel.asm:4341:      pp->parent = initproc;
+kernel/kernel.asm:4344:      release(&pp->lock);
+kernel/kernel.asm:4382:        swtch(&c->context, &p->context);
+kernel/kernel.asm:4391:          w_satp(MAKE_SATP(p->k_pagetable));
+kernel/kernel.asm:4398:        p->state = RUNNING;
+kernel/kernel.asm:4402:          w_satp(MAKE_SATP(p->k_pagetable));
+kernel/kernel.asm:4410:        swtch(&c->context, &p->context);
+kernel/kernel.asm:4422:      release(&p->lock);
+kernel/kernel.asm:4429:      acquire(&p->lock);
+kernel/kernel.asm:4433:      if(p->state == RUNNABLE) {
+kernel/kernel.asm:4458:      if(p->state == RUNNABLE) {
+kernel/kernel.asm:4460:        p->state = RUNNING;
+kernel/kernel.asm:4477:  if(!holding(&p->lock))
+kernel/kernel.asm:4492:  if(p->state == RUNNING)
+kernel/kernel.asm:4512:  swtch(&p->context, &mycpu()->context);
+kernel/kernel.asm:4535:    panic("sched p->lock");
+kernel/kernel.asm:4585:      p->ofile[fd] = 0;
+kernel/kernel.asm:4590:    if(p->ofile[fd]){
+kernel/kernel.asm:4597:  iput(p->cwd);
+kernel/kernel.asm:4604:  p->cwd = 0;
+kernel/kernel.asm:4620:  acquire(&p->lock);
+kernel/kernel.asm:4624:  struct proc *original_parent = p->parent;
+kernel/kernel.asm:4626:  release(&p->lock);
+kernel/kernel.asm:4634:  acquire(&p->lock);
+kernel/kernel.asm:4646:  p->xstate = status;
+kernel/kernel.asm:4648:  p->state = ZOMBIE;
+kernel/kernel.asm:4675:  acquire(&p->lock);
+kernel/kernel.asm:4678:  p->state = RUNNABLE;
+kernel/kernel.asm:4684:  release(&p->lock);
+kernel/kernel.asm:4710:  if(lk != &p->lock){  //DOC: sleeplock0
+kernel/kernel.asm:4712:    acquire(&p->lock);  //DOC: sleeplock1
+kernel/kernel.asm:4719:  p->chan = chan;
+kernel/kernel.asm:4721:  p->state = SLEEPING;
+kernel/kernel.asm:4727:  p->chan = 0;
+kernel/kernel.asm:4729:    release(&p->lock);
+kernel/kernel.asm:4745:  p->chan = chan;
+kernel/kernel.asm:4747:  p->state = SLEEPING;
+kernel/kernel.asm:4753:  p->chan = 0;
+kernel/kernel.asm:4755:  if(lk != &p->lock){
+kernel/kernel.asm:4777:  acquire(&p->lock);
+kernel/kernel.asm:4783:        if(np->state == ZOMBIE){
+kernel/kernel.asm:4796:          pid = np->pid;
+kernel/kernel.asm:4798:          if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
+kernel/kernel.asm:4811:          release(&np->lock);
+kernel/kernel.asm:4815:          release(&p->lock);
+kernel/kernel.asm:4821:            release(&np->lock);
+kernel/kernel.asm:4825:            release(&p->lock);
+kernel/kernel.asm:4835:      if(np->parent == p){
+kernel/kernel.asm:4838:        acquire(&np->lock);
+kernel/kernel.asm:4842:        if(np->state == ZOMBIE){
+kernel/kernel.asm:4845:        release(&np->lock);
+kernel/kernel.asm:4852:    if(!havekids || p->killed){
+kernel/kernel.asm:4856:      release(&p->lock);
+kernel/kernel.asm:4876:    sleep(p, &p->lock);  //DOC: wait-sleep
+kernel/kernel.asm:4899:    if(p->state == SLEEPING && p->chan == chan) {
+kernel/kernel.asm:4901:      p->state = RUNNABLE;
+kernel/kernel.asm:4907:      p->state = RUNNABLE;
+kernel/kernel.asm:4909:    release(&p->lock);
+kernel/kernel.asm:4916:    acquire(&p->lock);
+kernel/kernel.asm:4920:    if(p->state == SLEEPING && p->chan == chan) {
+kernel/kernel.asm:4959:    acquire(&p->lock);
+kernel/kernel.asm:4963:    if(p->pid == pid){
+kernel/kernel.asm:4966:        p->state = RUNNABLE;
+kernel/kernel.asm:4968:      release(&p->lock);
+kernel/kernel.asm:4971:    release(&p->lock);
+kernel/kernel.asm:4982:      p->killed = 1;
+kernel/kernel.asm:4985:      if(p->state == SLEEPING){
+kernel/kernel.asm:4989:      release(&p->lock);
+kernel/kernel.asm:5003:        p->state = RUNNABLE;
+kernel/kernel.asm:5032:    return copyout(p->pagetable, dst, src, len);
+kernel/kernel.asm:5086:    return copyin(p->pagetable, dst, src, len);
+kernel/kernel.asm:5149:    if(p->state == UNUSED)
+kernel/kernel.asm:5151:    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+kernel/kernel.asm:5153:      state = states[p->state];
+kernel/kernel.asm:5158:    printf("%d %s %s", p->pid, state, p->name);
+kernel/kernel.asm:5164:    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+kernel/kernel.asm:5168:    printf("%d %s %s", p->pid, state, p->name);
+kernel/kernel.asm:5180:    if(p->state == UNUSED)
+kernel/kernel.asm:5186:    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+kernel/kernel.asm:5258:      p->kstack = va;
+kernel/kernel.asm:5288:    acquire(&p->lock);
+kernel/kernel.asm:5292:    if(p->state == UNUSED) {
+kernel/kernel.asm:5295:      release(&p->lock);
+kernel/kernel.asm:5313:  p->pid = allocpid();
+kernel/kernel.asm:5317:  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+kernel/kernel.asm:5323:  p->pagetable = proc_pagetable(p);
+kernel/kernel.asm:5329:  if(p->pagetable == 0){
+kernel/kernel.asm:5331:  p->k_pagetable = kvm_create_kpt_process(p);
+kernel/kernel.asm:5337:  if(p->k_pagetable == 0){
+kernel/kernel.asm:5339:  init_proc_kernelstack(proc, p, procdiff, p->k_pagetable);
+kernel/kernel.asm:5347:  memset(&p->context, 0, sizeof(p->context));
+kernel/kernel.asm:5353:  p->context.ra = (uint64)forkret;
+kernel/kernel.asm:5357:  p->context.sp = p->kstack + PGSIZE;
+kernel/kernel.asm:5371:    release(&p->lock);
+kernel/kernel.asm:5382:    release(&p->lock);
+kernel/kernel.asm:5389:    release(&p->lock);
+kernel/kernel.asm:5411:  uvminit(p->pagetable, initcode, sizeof(initcode));
+kernel/kernel.asm:5418:  p->sz = PGSIZE;
+kernel/kernel.asm:5421:  p->trapframe->epc = 0;      // user program counter
+kernel/kernel.asm:5424:  p->trapframe->sp = PGSIZE;  // user stack pointer
+kernel/kernel.asm:5427:  safestrcpy(p->name, "initcode", sizeof(p->name));
+kernel/kernel.asm:5434:  p->cwd = namei("/");
+kernel/kernel.asm:5440:  p->state = RUNNABLE;
+kernel/kernel.asm:5443:  release(&p->lock);
+kernel/kernel.asm:5473:  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+kernel/kernel.asm:5480:  np->sz = p->sz;
+kernel/kernel.asm:5483:  np->parent = p;
+kernel/kernel.asm:5485:  *(np->trapframe) = *(p->trapframe);
+kernel/kernel.asm:5501:  np->trapframe->a0 = 0;
+kernel/kernel.asm:5512:    release(&np->lock);
+kernel/kernel.asm:5519:      np->ofile[i] = filedup(p->ofile[i]);
+kernel/kernel.asm:5527:    if(p->ofile[i])
+kernel/kernel.asm:5532:  np->cwd = idup(p->cwd);
+kernel/kernel.asm:5537:  safestrcpy(np->name, p->name, sizeof(p->name));
+kernel/kernel.asm:5543:  pid = np->pid;
+kernel/kernel.asm:5545:  np->state = RUNNABLE;
+kernel/kernel.asm:5548:  release(&np->lock);
+kernel/kernel.asm:5680:  p->trapframe->kernel_satp = r_satp();         // kernel page table
+kernel/kernel.asm:5685:  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
+kernel/kernel.asm:5691:  p->trapframe->kernel_trap = (uint64)usertrap;
+kernel/kernel.asm:5696:  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+kernel/kernel.asm:5717:  w_sepc(p->trapframe->epc);
+kernel/kernel.asm:5724:  uint64 satp = MAKE_SATP(p->pagetable);
+kernel/kernel.asm:5910:  p->trapframe->epc = r_sepc();
+kernel/kernel.asm:5920:    if(p->killed)
+kernel/kernel.asm:5923:    p->trapframe->epc += 4;
+kernel/kernel.asm:5937:  if(p->killed)
+kernel/kernel.asm:5965:  if(p->killed)
+kernel/kernel.asm:5971:    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+kernel/kernel.asm:5986:    p->killed = 1;
+kernel/kernel.asm:6118:    return p->trapframe->a0;
+kernel/kernel.asm:6122:    return p->trapframe->a5;
+kernel/kernel.asm:6132:    return p->trapframe->a1;
+kernel/kernel.asm:6136:    return p->trapframe->a2;
+kernel/kernel.asm:6140:    return p->trapframe->a3;
+kernel/kernel.asm:6144:    return p->trapframe->a4;
+kernel/kernel.asm:6148:    return p->trapframe->a5;
+kernel/kernel.asm:6171:  if(addr >= p->sz || addr+sizeof(uint64) > p->sz)
+kernel/kernel.asm:6176:  if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
+kernel/kernel.asm:6213:  int err = copyinstr(p->pagetable, buf, addr, max);
+kernel/kernel.asm:6339:  num = p->trapframe->a7;
+kernel/kernel.asm:6353:    p->trapframe->a0 = syscalls[num]();
+kernel/kernel.asm:6365:            p->pid, p->name, num);
+kernel/kernel.asm:6366:    p->trapframe->a0 = -1;
+kernel/kernel.asm:7076:  if((bp->data[bi/8] & m) == 0)
+kernel/kernel.asm:7085:  bp->data[bi/8] &= ~m;
+kernel/kernel.asm:7175:      if((bp->data[bi/8] & m) == 0){  // Is block free?
+kernel/kernel.asm:7191:        bp->data[bi/8] |= m;  // Mark block in use.
+kernel/kernel.asm:7209:  memset(bp->data, 0, BSIZE);
+kernel/kernel.asm:7261:    if((addr = ip->addrs[bn]) == 0)
+kernel/kernel.asm:7262:      ip->addrs[bn] = addr = balloc(ip->dev);
+kernel/kernel.asm:7273:    if((addr = ip->addrs[NDIRECT]) == 0)
+kernel/kernel.asm:7276:      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+kernel/kernel.asm:7277:    bp = bread(ip->dev, addr);
+kernel/kernel.asm:7282:    a = (uint*)bp->data;
+kernel/kernel.asm:7291:      a[bn] = addr = balloc(ip->dev);
+kernel/kernel.asm:7312:    if((addr = ip->addrs[bn]) == 0)
+kernel/kernel.asm:7319:      ip->addrs[bn] = addr = balloc(ip->dev);
+kernel/kernel.asm:7326:      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+kernel/kernel.asm:7333:      a[bn] = addr = balloc(ip->dev);
+kernel/kernel.asm:7375:    if(empty == 0 && ip->ref == 0)    // Remember empty slot.
+kernel/kernel.asm:7380:    if(ip->ref > 0 && ip->dev == dev && ip->inum == inum){
+kernel/kernel.asm:7387:      ip->ref++;
+kernel/kernel.asm:7398:    if(empty == 0 && ip->ref == 0)    // Remember empty slot.
+kernel/kernel.asm:7404:  ip->dev = dev;
+kernel/kernel.asm:7406:  ip->inum = inum;
+kernel/kernel.asm:7408:  ip->ref = 1;
+kernel/kernel.asm:7411:  ip->valid = 0;
+kernel/kernel.asm:7449:  memmove(sb, bp->data, sizeof(*sb));
+kernel/kernel.asm:7558:    dip = (struct dinode*)bp->data + inum%IPB;
+kernel/kernel.asm:7563:    if(dip->type == 0){  // a free inode
+kernel/kernel.asm:7585:      dip->type = type;
+kernel/kernel.asm:7622:  bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+kernel/kernel.asm:7632:  dip = (struct dinode*)bp->data + ip->inum%IPB;
+kernel/kernel.asm:7638:  dip->type = ip->type;
+kernel/kernel.asm:7641:  dip->major = ip->major;
+kernel/kernel.asm:7644:  dip->minor = ip->minor;
+kernel/kernel.asm:7647:  dip->nlink = ip->nlink;
+kernel/kernel.asm:7650:  dip->size = ip->size;
+kernel/kernel.asm:7653:  memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+kernel/kernel.asm:7688:  ip->ref++;
+kernel/kernel.asm:7713:  if(ip == 0 || ip->ref < 1)
+kernel/kernel.asm:7718:  acquiresleep(&ip->lock);
+kernel/kernel.asm:7722:  if(ip->valid == 0){
+kernel/kernel.asm:7737:    bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+kernel/kernel.asm:7747:    dip = (struct dinode*)bp->data + ip->inum%IPB;
+kernel/kernel.asm:7753:    ip->type = dip->type;
+kernel/kernel.asm:7756:    ip->major = dip->major;
+kernel/kernel.asm:7759:    ip->minor = dip->minor;
+kernel/kernel.asm:7762:    ip->nlink = dip->nlink;
+kernel/kernel.asm:7765:    ip->size = dip->size;
+kernel/kernel.asm:7768:    memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+kernel/kernel.asm:7778:    ip->valid = 1;
+kernel/kernel.asm:7781:    if(ip->type == 0)
+kernel/kernel.asm:7798:  if(ip == 0 || !holdingsleep(&ip->lock) || ip->ref < 1)
+kernel/kernel.asm:7808:  releasesleep(&ip->lock);
+kernel/kernel.asm:7828:// Caller must hold ip->lock.
+kernel/kernel.asm:7851:    if(ip->addrs[i]){
+kernel/kernel.asm:7854:      bfree(ip->dev, ip->addrs[i]);
+kernel/kernel.asm:7858:      ip->addrs[i] = 0;
+kernel/kernel.asm:7864:  if(ip->addrs[NDIRECT]){
+kernel/kernel.asm:7868:    bfree(ip->dev, ip->addrs[NDIRECT]);
+kernel/kernel.asm:7869:    ip->addrs[NDIRECT] = 0;
+kernel/kernel.asm:7872:  ip->size = 0;
+kernel/kernel.asm:7887:    bp = bread(ip->dev, ip->addrs[NDIRECT]);
+kernel/kernel.asm:7896:        bfree(ip->dev, a[j]);
+kernel/kernel.asm:7911:    bfree(ip->dev, ip->addrs[NDIRECT]);
+kernel/kernel.asm:7916:    ip->addrs[NDIRECT] = 0;
+kernel/kernel.asm:7934:  if(ip->ref == 1 && ip->valid && ip->nlink == 0){
+kernel/kernel.asm:7938:  ip->ref--;
+kernel/kernel.asm:7954:  if(ip->ref == 1 && ip->valid && ip->nlink == 0){
+kernel/kernel.asm:7959:    acquiresleep(&ip->lock);
+kernel/kernel.asm:7973:    ip->type = 0;
+kernel/kernel.asm:7979:    ip->valid = 0;
+kernel/kernel.asm:7981:    releasesleep(&ip->lock);
+kernel/kernel.asm:8017:// Caller must hold ip->lock.
+kernel/kernel.asm:8024:  st->dev = ip->dev;
+kernel/kernel.asm:8027:  st->ino = ip->inum;
+kernel/kernel.asm:8030:  st->type = ip->type;
+kernel/kernel.asm:8033:  st->nlink = ip->nlink;
+kernel/kernel.asm:8036:  st->size = ip->size;
+kernel/kernel.asm:8050:  if(off > ip->size || off + n < off)
+kernel/kernel.asm:8074:  if(off > ip->size || off + n < off)
+kernel/kernel.asm:8078:  if(off > ip->size || off + n < off)
+kernel/kernel.asm:8080:  if(off + n > ip->size)
+kernel/kernel.asm:8082:    n = ip->size - off;
+kernel/kernel.asm:8088:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+kernel/kernel.asm:8091:    if(either_copyout(user_dst, dst, bp->data + (off % BSIZE), m) == -1) {
+kernel/kernel.asm:8116:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+kernel/kernel.asm:8174:  if(off > ip->size || off + n < off)
+kernel/kernel.asm:8198:  if(off > ip->size || off + n < off)
+kernel/kernel.asm:8210:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+kernel/kernel.asm:8213:    if(either_copyin(bp->data + (off % BSIZE), user_src, src, m) == -1) {
+kernel/kernel.asm:8242:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+kernel/kernel.asm:8270:    if(off > ip->size)
+kernel/kernel.asm:8273:      ip->size = off;
+kernel/kernel.asm:8277:    // block to ip->addrs[].
+kernel/kernel.asm:8352:  if(dp->type != T_DIR)
+kernel/kernel.asm:8361:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/kernel.asm:8365:      return iget(dp->dev, inum);
+kernel/kernel.asm:8371:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/kernel.asm:8384:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/kernel.asm:8411:      return iget(dp->dev, inum);
+kernel/kernel.asm:8476:    if(ip->type != T_DIR){
+kernel/kernel.asm:8547:    if(ip->type != T_DIR){
+kernel/kernel.asm:8635:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/kernel.asm:8652:  for(off = 0; off < dp->size; off += sizeof(de)){
+kernel/kernel.asm:9188://   modify bp->data[]
+kernel/kernel.asm:9729:    if(copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0)
+kernel/kernel.asm:10676:  uint64 oldsz = p->sz;
+kernel/kernel.asm:10781:  p->trapframe->a1 = sp;
+kernel/kernel.asm:10801:  safestrcpy(p->name, last, sizeof(p->name));
+kernel/kernel.asm:10807:  oldpagetable = p->pagetable;
+kernel/kernel.asm:10809:  p->pagetable = pagetable;
+kernel/kernel.asm:10811:  p->sz = sz;
+kernel/kernel.asm:10813:  p->trapframe->epc = elf.entry;  // initial program counter = main
+kernel/kernel.asm:10817:  p->trapframe->sp = sp; // initial stack pointer
+kernel/kernel.asm:10824:  if(p->pid==1) {
+kernel/kernel.asm:10831:    vmprint(p->pagetable);
+kernel/kernel.asm:11007:    if(p->ofile[fd] == 0){
+kernel/kernel.asm:11014:      p->ofile[fd] = f;
+kernel/kernel.asm:11026:      p->ofile[fd] = f;
+kernel/kernel.asm:11084:    if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
+kernel/kernel.asm:11117:  if((ip = ialloc(dp->dev, type)) == 0)
+kernel/kernel.asm:11127:  ip->major = major;
+kernel/kernel.asm:11129:  ip->minor = minor;
+kernel/kernel.asm:11131:  ip->nlink = 1;
+kernel/kernel.asm:11142:  if(dirlink(dp, name, ip->inum) < 0)
+kernel/kernel.asm:11160:    dp->nlink++;  // for ".."
+kernel/kernel.asm:11168:    if(dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
+kernel/kernel.asm:11442:  if(ip->type == T_DIR){
+kernel/kernel.asm:11446:  ip->nlink++;
+kernel/kernel.asm:11468:  if(dp->dev != ip->dev || dirlink(dp, name, ip->inum) < 0){
+kernel/kernel.asm:11516:  ip->nlink--;
+kernel/kernel.asm:11595:  if(ip->nlink < 1)
+kernel/kernel.asm:11598:  if(ip->type == T_DIR && !isdirempty(ip)){
+kernel/kernel.asm:11618:  if(ip->type == T_DIR){
+kernel/kernel.asm:11626:  ip->nlink--;
+kernel/kernel.asm:11655:  for(off=2*sizeof(de); off<dp->size; off+=sizeof(de)){
+kernel/kernel.asm:11673:  for(off=2*sizeof(de); off<dp->size; off+=sizeof(de)){
+kernel/kernel.asm:11688:    dp->nlink--;
+kernel/kernel.asm:11778:  if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
+kernel/kernel.asm:11804:  if(ip->type == T_DEVICE){
+kernel/kernel.asm:11809:    f->major = ip->major;
+kernel/kernel.asm:11829:  if((omode & O_TRUNC) && ip->type == T_FILE){
+kernel/kernel.asm:11870:    if(ip->type == T_DIR && omode != O_RDONLY){
+kernel/kernel.asm:11904:    f->major = ip->major;
+kernel/kernel.asm:12088:  if(ip->type != T_DIR){
+kernel/kernel.asm:12100:  iput(p->cwd);
+kernel/kernel.asm:12107:  p->cwd = ip;
+kernel/kernel.asm:12323:      p->ofile[fd0] = 0;
+kernel/kernel.asm:12328:  if(copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+kernel/kernel.asm:12336:     copyout(p->pagetable, fdarray+sizeof(fd0), (char *)&fd1, sizeof(fd1)) < 0){
+kernel/kernel.asm:12344:    p->ofile[fd1] = 0;
+kernel/kernel.asm:12351:  if(copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+kernel/kernel.asm:12353:    p->ofile[fd0] = 0;
+kernel/kernel.asm:12359:    p->ofile[fd1] = 0;
+kernel/kernel.asm:12379:      p->ofile[fd0] = 0;
+kernel/kernel.asm:13290:  if (srcva >= p->sz || srcva+len >= p->sz || srcva+len < srcva)
+kernel/kernel.asm:13355:  for(int i = 0; i < max && srcva + i < p->sz; i++){
+kernel/kernel.asm:13368:  for(int i = 0; i < max && srcva + i < p->sz; i++){
+kernel/uart.c:136:// called from both the top- and bottom-half.
+kernel/sysfile.c:47:    if(p->ofile[fd] == 0){
+kernel/sysfile.c:48:      p->ofile[fd] = f;
+kernel/sysfile.c:135:  if(ip->type == T_DIR){
+kernel/sysfile.c:141:  ip->nlink++;
+kernel/sysfile.c:148:  if(dp->dev != ip->dev || dirlink(dp, name, ip->inum) < 0){
+kernel/sysfile.c:161:  ip->nlink--;
+kernel/sysfile.c:175:  for(off=2*sizeof(de); off<dp->size; off+=sizeof(de)){
+kernel/sysfile.c:211:  if(ip->nlink < 1)
+kernel/sysfile.c:213:  if(ip->type == T_DIR && !isdirempty(ip)){
+kernel/sysfile.c:221:  if(ip->type == T_DIR){
+kernel/sysfile.c:222:    dp->nlink--;
+kernel/sysfile.c:227:  ip->nlink--;
+kernel/sysfile.c:255:    if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
+kernel/sysfile.c:261:  if((ip = ialloc(dp->dev, type)) == 0)
+kernel/sysfile.c:265:  ip->major = major;
+kernel/sysfile.c:266:  ip->minor = minor;
+kernel/sysfile.c:267:  ip->nlink = 1;
+kernel/sysfile.c:271:    dp->nlink++;  // for ".."
+kernel/sysfile.c:273:    // No ip->nlink++ for ".": avoid cyclic ref count.
+kernel/sysfile.c:274:    if(dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
+kernel/sysfile.c:278:  if(dirlink(dp, name, ip->inum) < 0)
+kernel/sysfile.c:312:    if(ip->type == T_DIR && omode != O_RDONLY){
+kernel/sysfile.c:319:  if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
+kernel/sysfile.c:333:  if(ip->type == T_DEVICE){
+kernel/sysfile.c:335:    f->major = ip->major;
+kernel/sysfile.c:344:  if((omode & O_TRUNC) && ip->type == T_FILE){
+kernel/sysfile.c:403:  if(ip->type != T_DIR){
+kernel/sysfile.c:409:  iput(p->cwd);
+kernel/sysfile.c:411:  p->cwd = ip;
+kernel/sysfile.c:472:      p->ofile[fd0] = 0;
+kernel/sysfile.c:477:  if(copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+kernel/sysfile.c:478:     copyout(p->pagetable, fdarray+sizeof(fd0), (char *)&fd1, sizeof(fd1)) < 0){
+kernel/sysfile.c:479:    p->ofile[fd0] = 0;
+kernel/sysfile.c:480:    p->ofile[fd1] = 0;
+kernel/log.c:210://   modify bp->data[]
+kernel/proc.c:32:      initlock(&p->lock, "proc");
+kernel/proc.c:43:      // p->kstack = va;
+kernel/proc.c:91:// and return with p->lock held.
+kernel/proc.c:99:    acquire(&p->lock);
+kernel/proc.c:100:    if(p->state == UNUSED) {
+kernel/proc.c:104:      release(&p->lock);
+kernel/proc.c:110:  p->pid = allocpid();
+kernel/proc.c:113:  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+kernel/proc.c:114:    release(&p->lock);
+kernel/proc.c:119:  p->pagetable = proc_pagetable(p);
+kernel/proc.c:120:  if(p->pagetable == 0){
+kernel/proc.c:122:    release(&p->lock);
+kernel/proc.c:127:  p->k_pagetable = kvm_create_kpt_process(p);
+kernel/proc.c:128:  if(p->k_pagetable == 0){
+kernel/proc.c:129:    // proc_free_kernel_pagetable(p->k_pagetable, p->sz); // tm 3
+kernel/proc.c:131:    release(&p->lock);
+kernel/proc.c:136:  init_proc_kernelstack(proc, p, procdiff, p->k_pagetable);
+kernel/proc.c:140:  memset(&p->context, 0, sizeof(p->context));
+kernel/proc.c:141:  p->context.ra = (uint64)forkret;
+kernel/proc.c:142:  p->context.sp = p->kstack + PGSIZE;
+kernel/proc.c:149:// p->lock must be held.
+kernel/proc.c:153:  if(p->trapframe)
+kernel/proc.c:154:    kfree((void*)p->trapframe);
+kernel/proc.c:155:  p->trapframe = 0;
+kernel/proc.c:158:  if(p->k_pagetable){
+kernel/proc.c:159:    uvmunmap(p->k_pagetable, p->kstack, 1, 1);
+kernel/proc.c:160:    p->kstack = 0;
+kernel/proc.c:162:  if(p->pagetable)
+kernel/proc.c:163:    proc_freepagetable(p->pagetable, p->sz);
+kernel/proc.c:165:  p->pagetable = 0;
+kernel/proc.c:166:  p->sz = 0;
+kernel/proc.c:167:  p->pid = 0;
+kernel/proc.c:168:  p->parent = 0;
+kernel/proc.c:169:  p->name[0] = 0;
+kernel/proc.c:170:  p->chan = 0;
+kernel/proc.c:171:  p->killed = 0;
+kernel/proc.c:172:  p->xstate = 0;
+kernel/proc.c:173:  p->state = UNUSED;
+kernel/proc.c:200:              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+kernel/proc.c:242:  uvminit(p->pagetable, initcode, sizeof(initcode));
+kernel/proc.c:243:  p->sz = PGSIZE;
+kernel/proc.c:246:  p->trapframe->epc = 0;      // user program counter
+kernel/proc.c:247:  p->trapframe->sp = PGSIZE;  // user stack pointer
+kernel/proc.c:249:  safestrcpy(p->name, "initcode", sizeof(p->name));
+kernel/proc.c:250:  p->cwd = namei("/");
+kernel/proc.c:252:  p->state = RUNNABLE;
+kernel/proc.c:254:  release(&p->lock);
+kernel/proc.c:265:  sz = p->sz;
+kernel/proc.c:267:    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+kernel/proc.c:271:    sz = uvmdealloc(p->pagetable, sz, sz + n);
+kernel/proc.c:273:  p->sz = sz;
+kernel/proc.c:292:  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+kernel/proc.c:294:    release(&np->lock);
+kernel/proc.c:297:  np->sz = p->sz;
+kernel/proc.c:299:  np->parent = p;
+kernel/proc.c:302:  *(np->trapframe) = *(p->trapframe);
+kernel/proc.c:305:  np->trapframe->a0 = 0;
+kernel/proc.c:309:    if(p->ofile[i])
+kernel/proc.c:310:      np->ofile[i] = filedup(p->ofile[i]);
+kernel/proc.c:311:  np->cwd = idup(p->cwd);
+kernel/proc.c:313:  safestrcpy(np->name, p->name, sizeof(p->name));
+kernel/proc.c:315:  pid = np->pid;
+kernel/proc.c:317:  np->state = RUNNABLE;
+kernel/proc.c:319:  release(&np->lock);
+kernel/proc.c:325:// Caller must hold p->lock.
+kernel/proc.c:332:    // this code uses pp->parent without holding pp->lock.
+kernel/proc.c:336:    if(pp->parent == p){
+kernel/proc.c:337:      // pp->parent can't change between the check and the acquire()
+kernel/proc.c:339:      acquire(&pp->lock);
+kernel/proc.c:340:      pp->parent = initproc;
+kernel/proc.c:345:      release(&pp->lock);
+kernel/proc.c:363:    if(p->ofile[fd]){
+kernel/proc.c:364:      struct file *f = p->ofile[fd];
+kernel/proc.c:366:      p->ofile[fd] = 0;
+kernel/proc.c:371:  iput(p->cwd);
+kernel/proc.c:373:  p->cwd = 0;
+kernel/proc.c:384:  // grab a copy of p->parent, to ensure that we unlock the same
+kernel/proc.c:390:  acquire(&p->lock);
+kernel/proc.c:391:  struct proc *original_parent = p->parent;
+kernel/proc.c:392:  release(&p->lock);
+kernel/proc.c:398:  acquire(&p->lock);
+kernel/proc.c:406:  p->xstate = status;
+kernel/proc.c:407:  p->state = ZOMBIE;
+kernel/proc.c:425:  // hold p->lock for the whole time to avoid lost
+kernel/proc.c:427:  acquire(&p->lock);
+kernel/proc.c:433:      // this code uses np->parent without holding np->lock.
+kernel/proc.c:435:      // since np might be an ancestor, and we already hold p->lock.
+kernel/proc.c:436:      if(np->parent == p){
+kernel/proc.c:437:        // np->parent can't change between the check and the acquire()
+kernel/proc.c:439:        acquire(&np->lock);
+kernel/proc.c:441:        if(np->state == ZOMBIE){
+kernel/proc.c:443:          pid = np->pid;
+kernel/proc.c:444:          if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
+kernel/proc.c:445:                                  sizeof(np->xstate)) < 0) {
+kernel/proc.c:446:            release(&np->lock);
+kernel/proc.c:447:            release(&p->lock);
+kernel/proc.c:451:          release(&np->lock);
+kernel/proc.c:452:          release(&p->lock);
+kernel/proc.c:455:        release(&np->lock);
+kernel/proc.c:460:    if(!havekids || p->killed){
+kernel/proc.c:461:      release(&p->lock);
+kernel/proc.c:466:    sleep(p, &p->lock);  //DOC: wait-sleep
+kernel/proc.c:490:      acquire(&p->lock);
+kernel/proc.c:491:      if(p->state == RUNNABLE) {
+kernel/proc.c:495:        p->state = RUNNING;
+kernel/proc.c:498:          w_satp(MAKE_SATP(p->k_pagetable));
+kernel/proc.c:501:        swtch(&c->context, &p->context);
+kernel/proc.c:506:        // It should have changed its p->state before coming back.
+kernel/proc.c:511:      release(&p->lock);
+kernel/proc.c:524:// Switch to scheduler.  Must hold only p->lock
+kernel/proc.c:537:  if(!holding(&p->lock))
+kernel/proc.c:538:    panic("sched p->lock");
+kernel/proc.c:541:  if(p->state == RUNNING)
+kernel/proc.c:547:  swtch(&p->context, &mycpu()->context);
+kernel/proc.c:556:  acquire(&p->lock);
+kernel/proc.c:557:  p->state = RUNNABLE;
+kernel/proc.c:559:  release(&p->lock);
+kernel/proc.c:569:  // Still holding p->lock from scheduler.
+kernel/proc.c:590:  // Must acquire p->lock in order to
+kernel/proc.c:591:  // change p->state and then call sched.
+kernel/proc.c:592:  // Once we hold p->lock, we can be
+kernel/proc.c:594:  // (wakeup locks p->lock),
+kernel/proc.c:596:  if(lk != &p->lock){  //DOC: sleeplock0
+kernel/proc.c:597:    acquire(&p->lock);  //DOC: sleeplock1
+kernel/proc.c:602:  p->chan = chan;
+kernel/proc.c:603:  p->state = SLEEPING;
+kernel/proc.c:608:  p->chan = 0;
+kernel/proc.c:611:  if(lk != &p->lock){
+kernel/proc.c:612:    release(&p->lock);
+kernel/proc.c:618:// Must be called without any p->lock.
+kernel/proc.c:625:    acquire(&p->lock);
+kernel/proc.c:626:    if(p->state == SLEEPING && p->chan == chan) {
+kernel/proc.c:627:      p->state = RUNNABLE;
+kernel/proc.c:629:    release(&p->lock);
+kernel/proc.c:634:// Caller must hold p->lock.
+kernel/proc.c:638:  if(!holding(&p->lock))
+kernel/proc.c:640:  if(p->chan == p && p->state == SLEEPING) {
+kernel/proc.c:641:    p->state = RUNNABLE;
+kernel/proc.c:654:    acquire(&p->lock);
+kernel/proc.c:655:    if(p->pid == pid){
+kernel/proc.c:656:      p->killed = 1;
+kernel/proc.c:657:      if(p->state == SLEEPING){
+kernel/proc.c:659:        p->state = RUNNABLE;
+kernel/proc.c:661:      release(&p->lock);
+kernel/proc.c:664:    release(&p->lock);
+kernel/proc.c:677:    return copyout(p->pagetable, dst, src, len);
+kernel/proc.c:692:    return copyin(p->pagetable, dst, src, len);
+kernel/proc.c:717:    if(p->state == UNUSED)
+kernel/proc.c:719:    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+kernel/proc.c:720:      state = states[p->state];
+kernel/proc.c:723:    printf("%d %s %s", p->pid, state, p->name);
+kernel/proc.c:739:      p->kstack = va;
+匹配到二进制文件 user/usertests.o
+user/stats.asm:1152:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/stats.asm:1156:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/stats.asm:1158:  if(bp + bp->s.size == p->s.ptr){
+user/stats.asm:1159:    bp->s.size += p->s.ptr->s.size;
+user/stats.asm:1163:    bp->s.ptr = p->s.ptr->s.ptr;
+user/stats.asm:1169:    bp->s.ptr = p->s.ptr;
+user/stats.asm:1170:  if(p + p->s.size == bp){
+user/stats.asm:1171:    p->s.size += bp->s.size;
+user/stats.asm:1175:    p->s.ptr = bp->s.ptr;
+user/stats.asm:1179:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/stats.asm:1185:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/stats.asm:1189:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/stats.asm:1191:  if(bp + bp->s.size == p->s.ptr){
+user/stats.asm:1199:    bp->s.ptr = p->s.ptr;
+user/stats.asm:1201:  if(p + p->s.size == bp){
+user/stats.asm:1209:    p->s.ptr = bp;
+user/stats.asm:1253:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/stats.asm:1255:    if(p->s.size >= nunits){
+user/stats.asm:1266:        p->s.size = nunits;
+user/stats.asm:1285:    if(p->s.size >= nunits){
+user/stats.asm:1287:      if(p->s.size == nunits)
+user/stats.asm:1289:        p->s.size -= nunits;
+user/stats.asm:1292:        p += p->s.size;
+user/stats.asm:1297:        p->s.size = nunits;
+user/stats.asm:1318:        prevp->s.ptr = p->s.ptr;
+user/stats.asm:1322:  hp->s.size = nu;
+user/stats.asm:1332:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/stats.asm:1334:    if(p->s.size >= nunits){
+user/init.asm:1213:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/init.asm:1217:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/init.asm:1219:  if(bp + bp->s.size == p->s.ptr){
+user/init.asm:1220:    bp->s.size += p->s.ptr->s.size;
+user/init.asm:1224:    bp->s.ptr = p->s.ptr->s.ptr;
+user/init.asm:1230:    bp->s.ptr = p->s.ptr;
+user/init.asm:1231:  if(p + p->s.size == bp){
+user/init.asm:1232:    p->s.size += bp->s.size;
+user/init.asm:1236:    p->s.ptr = bp->s.ptr;
+user/init.asm:1240:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/init.asm:1246:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/init.asm:1250:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/init.asm:1252:  if(bp + bp->s.size == p->s.ptr){
+user/init.asm:1260:    bp->s.ptr = p->s.ptr;
+user/init.asm:1262:  if(p + p->s.size == bp){
+user/init.asm:1270:    p->s.ptr = bp;
+user/init.asm:1314:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/init.asm:1316:    if(p->s.size >= nunits){
+user/init.asm:1327:        p->s.size = nunits;
+user/init.asm:1346:    if(p->s.size >= nunits){
+user/init.asm:1348:      if(p->s.size == nunits)
+user/init.asm:1350:        p->s.size -= nunits;
+user/init.asm:1353:        p += p->s.size;
+user/init.asm:1358:        p->s.size = nunits;
+user/init.asm:1379:        prevp->s.ptr = p->s.ptr;
+user/init.asm:1383:  hp->s.size = nu;
+user/init.asm:1393:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/init.asm:1395:    if(p->s.size >= nunits){
+user/sh.asm:2518:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/sh.asm:2522:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/sh.asm:2524:  if(bp + bp->s.size == p->s.ptr){
+user/sh.asm:2525:    bp->s.size += p->s.ptr->s.size;
+user/sh.asm:2529:    bp->s.ptr = p->s.ptr->s.ptr;
+user/sh.asm:2535:    bp->s.ptr = p->s.ptr;
+user/sh.asm:2536:  if(p + p->s.size == bp){
+user/sh.asm:2537:    p->s.size += bp->s.size;
+user/sh.asm:2541:    p->s.ptr = bp->s.ptr;
+user/sh.asm:2545:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/sh.asm:2551:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/sh.asm:2555:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/sh.asm:2557:  if(bp + bp->s.size == p->s.ptr){
+user/sh.asm:2565:    bp->s.ptr = p->s.ptr;
+user/sh.asm:2567:  if(p + p->s.size == bp){
+user/sh.asm:2575:    p->s.ptr = bp;
+user/sh.asm:2619:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/sh.asm:2621:    if(p->s.size >= nunits){
+user/sh.asm:2632:        p->s.size = nunits;
+user/sh.asm:2651:    if(p->s.size >= nunits){
+user/sh.asm:2653:      if(p->s.size == nunits)
+user/sh.asm:2655:        p->s.size -= nunits;
+user/sh.asm:2658:        p += p->s.size;
+user/sh.asm:2663:        p->s.size = nunits;
+user/sh.asm:2684:        prevp->s.ptr = p->s.ptr;
+user/sh.asm:2688:  hp->s.size = nu;
+user/sh.asm:2698:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/sh.asm:2700:    if(p->s.size >= nunits){
+user/wc.asm:1299:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/wc.asm:1303:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/wc.asm:1305:  if(bp + bp->s.size == p->s.ptr){
+user/wc.asm:1306:    bp->s.size += p->s.ptr->s.size;
+user/wc.asm:1310:    bp->s.ptr = p->s.ptr->s.ptr;
+user/wc.asm:1316:    bp->s.ptr = p->s.ptr;
+user/wc.asm:1317:  if(p + p->s.size == bp){
+user/wc.asm:1318:    p->s.size += bp->s.size;
+user/wc.asm:1322:    p->s.ptr = bp->s.ptr;
+user/wc.asm:1326:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/wc.asm:1332:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/wc.asm:1336:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/wc.asm:1338:  if(bp + bp->s.size == p->s.ptr){
+user/wc.asm:1346:    bp->s.ptr = p->s.ptr;
+user/wc.asm:1348:  if(p + p->s.size == bp){
+user/wc.asm:1356:    p->s.ptr = bp;
+user/wc.asm:1400:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/wc.asm:1402:    if(p->s.size >= nunits){
+user/wc.asm:1413:        p->s.size = nunits;
+user/wc.asm:1432:    if(p->s.size >= nunits){
+user/wc.asm:1434:      if(p->s.size == nunits)
+user/wc.asm:1436:        p->s.size -= nunits;
+user/wc.asm:1439:        p += p->s.size;
+user/wc.asm:1444:        p->s.size = nunits;
+user/wc.asm:1465:        prevp->s.ptr = p->s.ptr;
+user/wc.asm:1469:  hp->s.size = nu;
+user/wc.asm:1479:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/wc.asm:1481:    if(p->s.size >= nunits){
+user/usertests.asm:9386:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/usertests.asm:9390:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/usertests.asm:9392:  if(bp + bp->s.size == p->s.ptr){
+user/usertests.asm:9393:    bp->s.size += p->s.ptr->s.size;
+user/usertests.asm:9397:    bp->s.ptr = p->s.ptr->s.ptr;
+user/usertests.asm:9403:    bp->s.ptr = p->s.ptr;
+user/usertests.asm:9404:  if(p + p->s.size == bp){
+user/usertests.asm:9405:    p->s.size += bp->s.size;
+user/usertests.asm:9409:    p->s.ptr = bp->s.ptr;
+user/usertests.asm:9413:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/usertests.asm:9419:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/usertests.asm:9423:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/usertests.asm:9425:  if(bp + bp->s.size == p->s.ptr){
+user/usertests.asm:9433:    bp->s.ptr = p->s.ptr;
+user/usertests.asm:9435:  if(p + p->s.size == bp){
+user/usertests.asm:9443:    p->s.ptr = bp;
+user/usertests.asm:9487:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/usertests.asm:9489:    if(p->s.size >= nunits){
+user/usertests.asm:9500:        p->s.size = nunits;
+user/usertests.asm:9519:    if(p->s.size >= nunits){
+user/usertests.asm:9521:      if(p->s.size == nunits)
+user/usertests.asm:9523:        p->s.size -= nunits;
+user/usertests.asm:9526:        p += p->s.size;
+user/usertests.asm:9531:        p->s.size = nunits;
+user/usertests.asm:9552:        prevp->s.ptr = p->s.ptr;
+user/usertests.asm:9556:  hp->s.size = nu;
+user/usertests.asm:9566:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/usertests.asm:9568:    if(p->s.size >= nunits){
+user/ls.c:13:  for(p=path+strlen(path); p >= path && *p != '/'; p--)
+user/stressfs.asm:1208:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/stressfs.asm:1212:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/stressfs.asm:1214:  if(bp + bp->s.size == p->s.ptr){
+user/stressfs.asm:1215:    bp->s.size += p->s.ptr->s.size;
+user/stressfs.asm:1219:    bp->s.ptr = p->s.ptr->s.ptr;
+user/stressfs.asm:1225:    bp->s.ptr = p->s.ptr;
+user/stressfs.asm:1226:  if(p + p->s.size == bp){
+user/stressfs.asm:1227:    p->s.size += bp->s.size;
+user/stressfs.asm:1231:    p->s.ptr = bp->s.ptr;
+user/stressfs.asm:1235:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/stressfs.asm:1241:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/stressfs.asm:1245:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/stressfs.asm:1247:  if(bp + bp->s.size == p->s.ptr){
+user/stressfs.asm:1255:    bp->s.ptr = p->s.ptr;
+user/stressfs.asm:1257:  if(p + p->s.size == bp){
+user/stressfs.asm:1265:    p->s.ptr = bp;
+user/stressfs.asm:1309:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/stressfs.asm:1311:    if(p->s.size >= nunits){
+user/stressfs.asm:1322:        p->s.size = nunits;
+user/stressfs.asm:1341:    if(p->s.size >= nunits){
+user/stressfs.asm:1343:      if(p->s.size == nunits)
+user/stressfs.asm:1345:        p->s.size -= nunits;
+user/stressfs.asm:1348:        p += p->s.size;
+user/stressfs.asm:1353:        p->s.size = nunits;
+user/stressfs.asm:1374:        prevp->s.ptr = p->s.ptr;
+user/stressfs.asm:1378:  hp->s.size = nu;
+user/stressfs.asm:1388:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/stressfs.asm:1390:    if(p->s.size >= nunits){
+user/usertests.c:371:// does chdir() call iput(p->cwd) in a transaction?
+user/usertests.c:393:// does exit() call iput(p->cwd) in a transaction?
+user/usertests.c:950:// release" due to exit() releasing a different p->parent->lock than
+user/usertests.c:2396:    // would not adjust p->sz correctly in this case,
+user/zombie.asm:1115:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/zombie.asm:1119:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/zombie.asm:1121:  if(bp + bp->s.size == p->s.ptr){
+user/zombie.asm:1122:    bp->s.size += p->s.ptr->s.size;
+user/zombie.asm:1126:    bp->s.ptr = p->s.ptr->s.ptr;
+user/zombie.asm:1132:    bp->s.ptr = p->s.ptr;
+user/zombie.asm:1133:  if(p + p->s.size == bp){
+user/zombie.asm:1134:    p->s.size += bp->s.size;
+user/zombie.asm:1138:    p->s.ptr = bp->s.ptr;
+user/zombie.asm:1142:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/zombie.asm:1148:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/zombie.asm:1152:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/zombie.asm:1154:  if(bp + bp->s.size == p->s.ptr){
+user/zombie.asm:1162:    bp->s.ptr = p->s.ptr;
+user/zombie.asm:1164:  if(p + p->s.size == bp){
+user/zombie.asm:1172:    p->s.ptr = bp;
+user/zombie.asm:1216:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/zombie.asm:1218:    if(p->s.size >= nunits){
+user/zombie.asm:1229:        p->s.size = nunits;
+user/zombie.asm:1248:    if(p->s.size >= nunits){
+user/zombie.asm:1250:      if(p->s.size == nunits)
+user/zombie.asm:1252:        p->s.size -= nunits;
+user/zombie.asm:1255:        p += p->s.size;
+user/zombie.asm:1260:        p->s.size = nunits;
+user/zombie.asm:1281:        prevp->s.ptr = p->s.ptr;
+user/zombie.asm:1285:  hp->s.size = nu;
+user/zombie.asm:1295:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/zombie.asm:1297:    if(p->s.size >= nunits){
+user/ls.asm:26:  for(p=path+strlen(path); p >= path && *p != '/'; p--)
+user/ls.asm:1407:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/ls.asm:1411:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/ls.asm:1413:  if(bp + bp->s.size == p->s.ptr){
+user/ls.asm:1414:    bp->s.size += p->s.ptr->s.size;
+user/ls.asm:1418:    bp->s.ptr = p->s.ptr->s.ptr;
+user/ls.asm:1424:    bp->s.ptr = p->s.ptr;
+user/ls.asm:1425:  if(p + p->s.size == bp){
+user/ls.asm:1426:    p->s.size += bp->s.size;
+user/ls.asm:1430:    p->s.ptr = bp->s.ptr;
+user/ls.asm:1434:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/ls.asm:1440:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/ls.asm:1444:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/ls.asm:1446:  if(bp + bp->s.size == p->s.ptr){
+user/ls.asm:1454:    bp->s.ptr = p->s.ptr;
+user/ls.asm:1456:  if(p + p->s.size == bp){
+user/ls.asm:1464:    p->s.ptr = bp;
+user/ls.asm:1508:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/ls.asm:1510:    if(p->s.size >= nunits){
+user/ls.asm:1521:        p->s.size = nunits;
+user/ls.asm:1540:    if(p->s.size >= nunits){
+user/ls.asm:1542:      if(p->s.size == nunits)
+user/ls.asm:1544:        p->s.size -= nunits;
+user/ls.asm:1547:        p += p->s.size;
+user/ls.asm:1552:        p->s.size = nunits;
+user/ls.asm:1573:        prevp->s.ptr = p->s.ptr;
+user/ls.asm:1577:  hp->s.size = nu;
+user/ls.asm:1587:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/ls.asm:1589:    if(p->s.size >= nunits){
+user/rm.asm:1155:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/rm.asm:1159:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/rm.asm:1161:  if(bp + bp->s.size == p->s.ptr){
+user/rm.asm:1162:    bp->s.size += p->s.ptr->s.size;
+user/rm.asm:1166:    bp->s.ptr = p->s.ptr->s.ptr;
+user/rm.asm:1172:    bp->s.ptr = p->s.ptr;
+user/rm.asm:1173:  if(p + p->s.size == bp){
+user/rm.asm:1174:    p->s.size += bp->s.size;
+user/rm.asm:1178:    p->s.ptr = bp->s.ptr;
+user/rm.asm:1182:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/rm.asm:1188:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/rm.asm:1192:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/rm.asm:1194:  if(bp + bp->s.size == p->s.ptr){
+user/rm.asm:1202:    bp->s.ptr = p->s.ptr;
+user/rm.asm:1204:  if(p + p->s.size == bp){
+user/rm.asm:1212:    p->s.ptr = bp;
+user/rm.asm:1256:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/rm.asm:1258:    if(p->s.size >= nunits){
+user/rm.asm:1269:        p->s.size = nunits;
+user/rm.asm:1288:    if(p->s.size >= nunits){
+user/rm.asm:1290:      if(p->s.size == nunits)
+user/rm.asm:1292:        p->s.size -= nunits;
+user/rm.asm:1295:        p += p->s.size;
+user/rm.asm:1300:        p->s.size = nunits;
+user/rm.asm:1321:        prevp->s.ptr = p->s.ptr;
+user/rm.asm:1325:  hp->s.size = nu;
+user/rm.asm:1335:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/rm.asm:1337:    if(p->s.size >= nunits){
+user/ln.asm:1137:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/ln.asm:1141:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/ln.asm:1143:  if(bp + bp->s.size == p->s.ptr){
+user/ln.asm:1144:    bp->s.size += p->s.ptr->s.size;
+user/ln.asm:1148:    bp->s.ptr = p->s.ptr->s.ptr;
+user/ln.asm:1154:    bp->s.ptr = p->s.ptr;
+user/ln.asm:1155:  if(p + p->s.size == bp){
+user/ln.asm:1156:    p->s.size += bp->s.size;
+user/ln.asm:1160:    p->s.ptr = bp->s.ptr;
+user/ln.asm:1164:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/ln.asm:1170:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/ln.asm:1174:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/ln.asm:1176:  if(bp + bp->s.size == p->s.ptr){
+user/ln.asm:1184:    bp->s.ptr = p->s.ptr;
+user/ln.asm:1186:  if(p + p->s.size == bp){
+user/ln.asm:1194:    p->s.ptr = bp;
+user/ln.asm:1238:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/ln.asm:1240:    if(p->s.size >= nunits){
+user/ln.asm:1251:        p->s.size = nunits;
+user/ln.asm:1270:    if(p->s.size >= nunits){
+user/ln.asm:1272:      if(p->s.size == nunits)
+user/ln.asm:1274:        p->s.size -= nunits;
+user/ln.asm:1277:        p += p->s.size;
+user/ln.asm:1282:        p->s.size = nunits;
+user/ln.asm:1303:        prevp->s.ptr = p->s.ptr;
+user/ln.asm:1307:  hp->s.size = nu;
+user/ln.asm:1317:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/ln.asm:1319:    if(p->s.size >= nunits){
+user/grind.asm:2340:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/grind.asm:2344:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/grind.asm:2346:  if(bp + bp->s.size == p->s.ptr){
+user/grind.asm:2347:    bp->s.size += p->s.ptr->s.size;
+user/grind.asm:2351:    bp->s.ptr = p->s.ptr->s.ptr;
+user/grind.asm:2357:    bp->s.ptr = p->s.ptr;
+user/grind.asm:2358:  if(p + p->s.size == bp){
+user/grind.asm:2359:    p->s.size += bp->s.size;
+user/grind.asm:2363:    p->s.ptr = bp->s.ptr;
+user/grind.asm:2367:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/grind.asm:2373:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/grind.asm:2377:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/grind.asm:2379:  if(bp + bp->s.size == p->s.ptr){
+user/grind.asm:2387:    bp->s.ptr = p->s.ptr;
+user/grind.asm:2389:  if(p + p->s.size == bp){
+user/grind.asm:2397:    p->s.ptr = bp;
+user/grind.asm:2441:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/grind.asm:2443:    if(p->s.size >= nunits){
+user/grind.asm:2454:        p->s.size = nunits;
+user/grind.asm:2473:    if(p->s.size >= nunits){
+user/grind.asm:2475:      if(p->s.size == nunits)
+user/grind.asm:2477:        p->s.size -= nunits;
+user/grind.asm:2480:        p += p->s.size;
+user/grind.asm:2485:        p->s.size = nunits;
+user/grind.asm:2506:        prevp->s.ptr = p->s.ptr;
+user/grind.asm:2510:  hp->s.size = nu;
+user/grind.asm:2520:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/grind.asm:2522:    if(p->s.size >= nunits){
+user/kill.asm:1142:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/kill.asm:1146:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/kill.asm:1148:  if(bp + bp->s.size == p->s.ptr){
+user/kill.asm:1149:    bp->s.size += p->s.ptr->s.size;
+user/kill.asm:1153:    bp->s.ptr = p->s.ptr->s.ptr;
+user/kill.asm:1159:    bp->s.ptr = p->s.ptr;
+user/kill.asm:1160:  if(p + p->s.size == bp){
+user/kill.asm:1161:    p->s.size += bp->s.size;
+user/kill.asm:1165:    p->s.ptr = bp->s.ptr;
+user/kill.asm:1169:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/kill.asm:1175:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/kill.asm:1179:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/kill.asm:1181:  if(bp + bp->s.size == p->s.ptr){
+user/kill.asm:1189:    bp->s.ptr = p->s.ptr;
+user/kill.asm:1191:  if(p + p->s.size == bp){
+user/kill.asm:1199:    p->s.ptr = bp;
+user/kill.asm:1243:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/kill.asm:1245:    if(p->s.size >= nunits){
+user/kill.asm:1256:        p->s.size = nunits;
+user/kill.asm:1275:    if(p->s.size >= nunits){
+user/kill.asm:1277:      if(p->s.size == nunits)
+user/kill.asm:1279:        p->s.size -= nunits;
+user/kill.asm:1282:        p += p->s.size;
+user/kill.asm:1287:        p->s.size = nunits;
+user/kill.asm:1308:        prevp->s.ptr = p->s.ptr;
+user/kill.asm:1312:  hp->s.size = nu;
+user/kill.asm:1322:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/kill.asm:1324:    if(p->s.size >= nunits){
+user/cat.asm:1234:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/cat.asm:1238:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/cat.asm:1240:  if(bp + bp->s.size == p->s.ptr){
+user/cat.asm:1241:    bp->s.size += p->s.ptr->s.size;
+user/cat.asm:1245:    bp->s.ptr = p->s.ptr->s.ptr;
+user/cat.asm:1251:    bp->s.ptr = p->s.ptr;
+user/cat.asm:1252:  if(p + p->s.size == bp){
+user/cat.asm:1253:    p->s.size += bp->s.size;
+user/cat.asm:1257:    p->s.ptr = bp->s.ptr;
+user/cat.asm:1261:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/cat.asm:1267:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/cat.asm:1271:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/cat.asm:1273:  if(bp + bp->s.size == p->s.ptr){
+user/cat.asm:1281:    bp->s.ptr = p->s.ptr;
+user/cat.asm:1283:  if(p + p->s.size == bp){
+user/cat.asm:1291:    p->s.ptr = bp;
+user/cat.asm:1335:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/cat.asm:1337:    if(p->s.size >= nunits){
+user/cat.asm:1348:        p->s.size = nunits;
+user/cat.asm:1367:    if(p->s.size >= nunits){
+user/cat.asm:1369:      if(p->s.size == nunits)
+user/cat.asm:1371:        p->s.size -= nunits;
+user/cat.asm:1374:        p += p->s.size;
+user/cat.asm:1379:        p->s.size = nunits;
+user/cat.asm:1400:        prevp->s.ptr = p->s.ptr;
+user/cat.asm:1404:  hp->s.size = nu;
+user/cat.asm:1414:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/cat.asm:1416:    if(p->s.size >= nunits){
+user/grep.asm:1425:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/grep.asm:1429:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/grep.asm:1431:  if(bp + bp->s.size == p->s.ptr){
+user/grep.asm:1432:    bp->s.size += p->s.ptr->s.size;
+user/grep.asm:1436:    bp->s.ptr = p->s.ptr->s.ptr;
+user/grep.asm:1442:    bp->s.ptr = p->s.ptr;
+user/grep.asm:1443:  if(p + p->s.size == bp){
+user/grep.asm:1444:    p->s.size += bp->s.size;
+user/grep.asm:1448:    p->s.ptr = bp->s.ptr;
+user/grep.asm:1452:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/grep.asm:1458:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/grep.asm:1462:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/grep.asm:1464:  if(bp + bp->s.size == p->s.ptr){
+user/grep.asm:1472:    bp->s.ptr = p->s.ptr;
+user/grep.asm:1474:  if(p + p->s.size == bp){
+user/grep.asm:1482:    p->s.ptr = bp;
+user/grep.asm:1526:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/grep.asm:1528:    if(p->s.size >= nunits){
+user/grep.asm:1539:        p->s.size = nunits;
+user/grep.asm:1558:    if(p->s.size >= nunits){
+user/grep.asm:1560:      if(p->s.size == nunits)
+user/grep.asm:1562:        p->s.size -= nunits;
+user/grep.asm:1565:        p += p->s.size;
+user/grep.asm:1570:        p->s.size = nunits;
+user/grep.asm:1591:        prevp->s.ptr = p->s.ptr;
+user/grep.asm:1595:  hp->s.size = nu;
+user/grep.asm:1605:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/grep.asm:1607:    if(p->s.size >= nunits){
+user/echo.asm:1157:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/echo.asm:1161:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/echo.asm:1163:  if(bp + bp->s.size == p->s.ptr){
+user/echo.asm:1164:    bp->s.size += p->s.ptr->s.size;
+user/echo.asm:1168:    bp->s.ptr = p->s.ptr->s.ptr;
+user/echo.asm:1174:    bp->s.ptr = p->s.ptr;
+user/echo.asm:1175:  if(p + p->s.size == bp){
+user/echo.asm:1176:    p->s.size += bp->s.size;
+user/echo.asm:1180:    p->s.ptr = bp->s.ptr;
+user/echo.asm:1184:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/echo.asm:1190:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/echo.asm:1194:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/echo.asm:1196:  if(bp + bp->s.size == p->s.ptr){
+user/echo.asm:1204:    bp->s.ptr = p->s.ptr;
+user/echo.asm:1206:  if(p + p->s.size == bp){
+user/echo.asm:1214:    p->s.ptr = bp;
+user/echo.asm:1258:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/echo.asm:1260:    if(p->s.size >= nunits){
+user/echo.asm:1271:        p->s.size = nunits;
+user/echo.asm:1290:    if(p->s.size >= nunits){
+user/echo.asm:1292:      if(p->s.size == nunits)
+user/echo.asm:1294:        p->s.size -= nunits;
+user/echo.asm:1297:        p += p->s.size;
+user/echo.asm:1302:        p->s.size = nunits;
+user/echo.asm:1323:        prevp->s.ptr = p->s.ptr;
+user/echo.asm:1327:  hp->s.size = nu;
+user/echo.asm:1337:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/echo.asm:1339:    if(p->s.size >= nunits){
+user/umalloc.c:30:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/umalloc.c:31:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/umalloc.c:33:  if(bp + bp->s.size == p->s.ptr){
+user/umalloc.c:34:    bp->s.size += p->s.ptr->s.size;
+user/umalloc.c:35:    bp->s.ptr = p->s.ptr->s.ptr;
+user/umalloc.c:37:    bp->s.ptr = p->s.ptr;
+user/umalloc.c:38:  if(p + p->s.size == bp){
+user/umalloc.c:39:    p->s.size += bp->s.size;
+user/umalloc.c:40:    p->s.ptr = bp->s.ptr;
+user/umalloc.c:42:    p->s.ptr = bp;
+user/umalloc.c:58:  hp->s.size = nu;
+user/umalloc.c:74:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/umalloc.c:75:    if(p->s.size >= nunits){
+user/umalloc.c:76:      if(p->s.size == nunits)
+user/umalloc.c:77:        prevp->s.ptr = p->s.ptr;
+user/umalloc.c:79:        p->s.size -= nunits;
+user/umalloc.c:80:        p += p->s.size;
+user/umalloc.c:81:        p->s.size = nunits;
+user/mkdir.asm:1155:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/mkdir.asm:1159:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/mkdir.asm:1161:  if(bp + bp->s.size == p->s.ptr){
+user/mkdir.asm:1162:    bp->s.size += p->s.ptr->s.size;
+user/mkdir.asm:1166:    bp->s.ptr = p->s.ptr->s.ptr;
+user/mkdir.asm:1172:    bp->s.ptr = p->s.ptr;
+user/mkdir.asm:1173:  if(p + p->s.size == bp){
+user/mkdir.asm:1174:    p->s.size += bp->s.size;
+user/mkdir.asm:1178:    p->s.ptr = bp->s.ptr;
+user/mkdir.asm:1182:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/mkdir.asm:1188:  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+user/mkdir.asm:1192:    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+user/mkdir.asm:1194:  if(bp + bp->s.size == p->s.ptr){
+user/mkdir.asm:1202:    bp->s.ptr = p->s.ptr;
+user/mkdir.asm:1204:  if(p + p->s.size == bp){
+user/mkdir.asm:1212:    p->s.ptr = bp;
+user/mkdir.asm:1256:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/mkdir.asm:1258:    if(p->s.size >= nunits){
+user/mkdir.asm:1269:        p->s.size = nunits;
+user/mkdir.asm:1288:    if(p->s.size >= nunits){
+user/mkdir.asm:1290:      if(p->s.size == nunits)
+user/mkdir.asm:1292:        p->s.size -= nunits;
+user/mkdir.asm:1295:        p += p->s.size;
+user/mkdir.asm:1300:        p->s.size = nunits;
+user/mkdir.asm:1321:        prevp->s.ptr = p->s.ptr;
+user/mkdir.asm:1325:  hp->s.size = nu;
+user/mkdir.asm:1335:  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+user/mkdir.asm:1337:    if(p->s.size >= nunits){
+匹配到二进制文件 .git/objects/2d/1f860e12d2aa038667db8e9d5215be5ea75393
+匹配到二进制文件 .git/objects/d1/67009dbbedda943c935d0fba531352417c13fb
+匹配到二进制文件 .git/objects/e2/37d411b216de94c5edc3fdeefbc95c1115cf71
+匹配到二进制文件 .git/objects/pack/pack-f998c999776b256fe01cb6853b999c35fa5e10dd.pack
+匹配到二进制文件 .git/objects/pack/pack-f998c999776b256fe01cb6853b999c35fa5e10dd.idx
+匹配到二进制文件 .git/objects/a1/2c0db3dd8e0375292f4e437747dbc09ab0b5de

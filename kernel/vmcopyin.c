@@ -30,7 +30,7 @@ int
 copyin_new(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
   struct proc *p = myproc();
-
+  // 当拷贝的用户空间地址大于进程空间时，认为不合理（判断1、2）；len为负数时也不合理
   if (srcva >= p->sz || srcva+len >= p->sz || srcva+len < srcva)
     return -1;
   memmove((void *) dst, (void *)srcva, len);
