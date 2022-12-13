@@ -113,6 +113,13 @@ found:
     return 0;
   }
 
+  // Allocate an alarm trapframe page.
+  // 仅用于保存变量，因此这里并没有映射到进程的页表中；不确定是否需要映射
+  if((p->alarm_trapframe = (struct trapframe *)kalloc()) == 0){
+    release(&p->lock);
+    return 0;
+  }
+
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -120,6 +127,12 @@ found:
     release(&p->lock);
     return 0;
   }
+
+  // 如果一个程序调用了sigalarm(0, 0)，系统应当停止生成周期性的报警调用
+  // 因此初始化都为0
+  p->ticks_target = 0;
+  p->ticks_done = 0;
+  p->fn_handler = 0;
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -139,6 +152,11 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+
+  if(p->alarm_trapframe)
+    kfree((void*)p->alarm_trapframe);
+  p->alarm_trapframe = 0;
+
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;

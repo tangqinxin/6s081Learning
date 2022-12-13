@@ -122,6 +122,7 @@ panic(char *s)
   printf(s);
   printf("\n");
   panicked = 1; // freeze uart output from other CPUs
+  backtrace(); // tm add
   for(;;)
     ;
 }
@@ -131,4 +132,17 @@ printfinit(void)
 {
   initlock(&pr.lock, "pr");
   pr.locking = 1;
+}
+
+void backtrace()
+{
+  printf("backtrace:\n");
+  uint64 fp = r_fp(); // 这个函数使用内联汇编来读取s0，从而获取当前的帧指针
+  uint64 fp_upper_bound = PGROUNDUP(fp);
+  uint64 fp_lower_bound = PGROUNDDOWN(fp);
+  while(fp<fp_upper_bound && fp>fp_lower_bound){
+    uint64 ret_addr = *(uint64*)(fp-8); // fp-8为返回地址存储位置
+    printf("%p\n",ret_addr); // 此处要求打印的是返回地址，即函数返回之后执行的pc地址
+    fp=*((uint64*)(fp-16)); // fp-16为上一个栈帧存储位置
+  }
 }

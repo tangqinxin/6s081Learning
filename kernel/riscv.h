@@ -352,3 +352,15 @@ sfence_vma()
 
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
+
+// add by lab4 instruction
+// 已知：GCC编译器将当前正在执行的函数的帧指针保存在s0寄存器。将下面的函数添加到kernel/riscv.h
+// 需要：将下面的函数添加到kernel/riscv.h，并在backtrace中调用此函数来读取当前的帧指针。
+// 这个函数使用内联汇编来读取s0，从而获取当前的帧指针
+static inline uint64
+r_fp()
+{
+  uint64 x;
+  asm volatile("mv %0, s0" : "=r" (x) );
+  return x;
+}

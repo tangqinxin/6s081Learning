@@ -70,6 +70,7 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  backtrace(); // tm add
   return 0;
 }
 
@@ -94,4 +95,28 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_sigalarm(void) {
+  printf("sys_sigalarm is called\n");
+  //因为argaddr实现里有解引用操作，所以这里用&myproc()而不是myproc()；最终其实是想p->fn_handler=a1寄存器值
+  if(argint(0, &myproc()->ticks_target)<0 || argaddr(1, &myproc()->fn_handler) <0 ) {
+    return -1;
+  }
+  return 0;
+}
+
+uint64
+sys_sigreturn(void) {
+  printf("sys_sigreturn is called\n");
+  /*
+  * 注意，这里会恢复现场。整个流程如下：
+  * userspace->sigreturn->trap->usertrap()->系统调用陷入内核->分析陷入原因->syscall()->sys_sigreturn()->替换trapframe，然后返回到usertrap()->usertrapret()返回
+  * 以上过程只有trapframe的a0返回值会修改，其他不变，因此不会受到影响
+  */
+  struct proc* p =  myproc();
+  *p->trapframe = *p->alarm_trapframe;
+  p->is_alarming = 0;
+  return 0;
 }

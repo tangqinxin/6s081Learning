@@ -49,7 +49,7 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
+
   if(r_scause() == 8){
     // system call
 
@@ -77,8 +77,30 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2){
+    /* 
+     * which_dev == 2 是指计时器产生的报警中断，见上述描述give up the CPU if this is a timer interrupt.
+     * 因此这里原本是要yield的，这里增加了一个计数操作 
+     */
+    if(p->is_alarming == 0){
+      // 如果当前并没有在执行alarm程序，则不增加
+      p->ticks_done = p->ticks_done + 1;
+    }
+    // 如果满足ticks，则调用中断函数
+    if(p->is_alarming == 0 && p->ticks_done == p->ticks_target ) {
+      // 在跳转回用户状之前，我们要保存当前在内核中的寄存器状态
+      // 1、保存哪些寄存器？
+      // 2、保存在哪里？
+      // 3、如何跳转回来？
+      // 解答：我们在内核，无法直接跳转到userspace的函数调用，可能需要通过正常的返回流程返回回去，因此要修改epc寄存器
+      *p->alarm_trapframe = *p->trapframe;
+      p->trapframe->epc = p->fn_handler;
+      p->ticks_done = 0;
+      p->is_alarming = 1;
+    }
     yield();
+  }
+
 
   usertrapret();
 }
