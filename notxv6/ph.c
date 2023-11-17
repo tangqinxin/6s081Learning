@@ -16,6 +16,7 @@ struct entry {
 struct entry *table[NBUCKET];
 int keys[NKEYS];
 int nthread = 1;
+pthread_mutex_t mlock[NBUCKET]; // 每个散列桶一把锁
 
 double
 now()
@@ -34,6 +35,7 @@ insert(int key, int value, struct entry **p, struct entry *n)
   e->next = n;
   *p = e;
 }
+static int tm =0;
 
 static 
 void put(int key, int value)
@@ -44,8 +46,9 @@ void put(int key, int value)
   struct entry *e = 0;
   for (e = table[i]; e != 0; e = e->next) {
     if (e->key == key)
-      break;
+      break; // 注意，这里只有当key相同的时候，e才不会为空，确保不丢key，能够让下面get到
   }
+  pthread_mutex_lock(&mlock[i]); // acquire lock
   if(e){
     // update the existing key.
     e->value = value;
@@ -53,6 +56,7 @@ void put(int key, int value)
     // the new is new.
     insert(key, value, &table[i], table[i]);
   }
+  pthread_mutex_unlock(&mlock[i]); // release lock
 }
 
 static struct entry*
@@ -64,7 +68,7 @@ get(int key)
   struct entry *e = 0;
   for (e = table[i]; e != 0; e = e->next) {
     if (e->key == key) break;
-  }
+  } // 这里只关心key，并不关心是哪个线程写入的value
 
   return e;
 }
@@ -76,6 +80,7 @@ put_thread(void *xa)
   int b = NKEYS/nthread;
 
   for (int i = 0; i < b; i++) {
+    // printf("tm thread %d, key[%d] value = %d \n", n, keys[b*n + i], n); // tm add
     put(keys[b*n + i], n);
   }
 
@@ -112,7 +117,10 @@ main(int argc, char *argv[])
   srandom(0);
   assert(NKEYS % nthread == 0);
   for (int i = 0; i < NKEYS; i++) {
-    keys[i] = random();
+    keys[i] = random(); // 预先生成了随机数key,此时还是单线程的
+  }
+  for(int i=0;i<NBUCKET;i++){
+    pthread_mutex_init(&mlock[i], NULL); // initialize the lock
   }
 
   //

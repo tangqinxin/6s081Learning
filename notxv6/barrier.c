@@ -29,8 +29,23 @@ barrier()
   //
   // Block until all threads have called barrier() and
   // then increment bstate.round.
-  //
-  
+  pthread_mutex_lock(&bstate.barrier_mutex); 
+  bstate.nthread++; // step1: reach barrier, count++
+  int curRound = bstate.round;
+  while(1){ // in case of spurious wake up
+    if(bstate.nthread == nthread){ // step2: whether all thread reach?
+      bstate.round++; // step3: all reach, round++
+      bstate.nthread = 0; // re count n thread
+      break;
+    } else if (curRound < bstate.round) { // step4: other round has begin
+      break;
+    } else {
+      pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex); // wait other thread reach
+    }
+  }
+
+  pthread_mutex_unlock(&bstate.barrier_mutex); 
+  pthread_cond_broadcast(&bstate.barrier_cond); // this thread pass, wake up other thread to go though next round
 }
 
 static void *
@@ -42,7 +57,7 @@ thread(void *xa)
 
   for (i = 0; i < 20000; i++) {
     int t = bstate.round;
-    assert (i == t);
+    assert (i == t);// 如果没有全部到达，round就不能自增，此时另一个线程到达的时候i才能与t一致。如果t增加了，那么进来的时候就会出现不等。
     barrier();
     usleep(random() % 100);
   }
